@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+
+
+# Data folders - RAW audio và processed spectrograms
+data/
+data_GK/
+
+# Model checkpoints và training outputs
+checkpoint/
+checkpoint_nn/
+checkpoint_cnn/
+
+
+
+
