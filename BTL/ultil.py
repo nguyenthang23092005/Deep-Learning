@@ -3,23 +3,11 @@ import numpy as np
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 
-def load_data_from_folders(data_dir='D:/DL/BTL/data_GK', test_size=0.2, random_state=42):
-    """
-    Load tất cả spectrograms từ các folder lệnh trong data_GK
-    
-    Arguments:
-    data_dir -- đường dẫn đến folder chứa data (mặc định: D:/DL/BTL/data_GK)
-    test_size -- tỷ lệ test set (mặc định: 0.2 = 20%)
-    random_state -- seed để shuffle
-    
-    Returns:
-    X_train, Y_train, X_test, Y_test, label_mapping
-    """
+def load_data_from_folders(data_dir='data_GK', test_size=0.2, random_state=42):
     data_dir = os.path.normpath(data_dir)
     
     print(f"📂 Đang load dữ liệu từ: {data_dir}")
     
-    # Lấy danh sách các folder (mỗi folder = 1 lệnh)
     command_folders = [f for f in os.listdir(data_dir) 
                       if os.path.isdir(os.path.join(data_dir, f))]
     
@@ -89,7 +77,7 @@ def load_data_from_folders(data_dir='D:/DL/BTL/data_GK', test_size=0.2, random_s
     return X_train, Y_train, X_test, Y_test, label_mapping
 
 
-def load_sample_data(data_dir='D:/DL/BTL/data_GK', samples_per_class=20, test_size=0.2, random_state=42):
+def load_sample_data(data_dir='data_GK', samples_per_class=20, test_size=0.2, random_state=42):
     """
     Load MỘT SỐ MẪU từ mỗi lệnh để test nhanh
     
@@ -169,71 +157,4 @@ def load_sample_data(data_dir='D:/DL/BTL/data_GK', samples_per_class=20, test_si
     print(f"   Test set: {X_test.shape[0]} samples")
     
     return X_train, Y_train, X_test, Y_test, label_mapping
-
-def load_and_split_data(data_dir='data_process', test_size=0.2, random_state=42):
-    data_dir = os.path.normpath(data_dir)
-    
-    # Load dữ liệu spectrogram và labels
-    X_path = os.path.normpath(os.path.join(data_dir, 'X_spectrograms.npy'))
-    y_path = os.path.normpath(os.path.join(data_dir, 'y_labels.npy'))
-    label_mapping_path = os.path.normpath(os.path.join(data_dir, 'label_mapping.npy'))
-    
-    print(f"📂 Đang load dữ liệu từ: {data_dir}")
-    print(f"   Kiểm tra file: {X_path}")
-    print(f"   File tồn tại: {os.path.exists(X_path)}")
-    
-    if not os.path.exists(X_path):
-        raise FileNotFoundError(f"Không tìm thấy {X_path}. Vui lòng chạy convert_to_spectrogram.py trước!")
-    
-    if not os.path.exists(y_path):
-        raise FileNotFoundError(f"Không tìm thấy {y_path}. Vui lòng chạy convert_to_spectrogram.py trước!")
-    
-    # Load dữ liệu
-    X = np.load(X_path)  # Shape: (n_samples, n_mels, time_frames)
-    Y = np.load(y_path)  # Shape: (n_samples,)
-    
-    # Load label mapping nếu có
-    if os.path.exists(label_mapping_path):
-        label_mapping = np.load(label_mapping_path, allow_pickle=True).item()
-        print(f"\n📋 Label Mapping:")
-        for idx, cmd in label_mapping.items():
-            count = np.sum(Y == idx)
-            print(f"   {idx}: {cmd} ({count} samples)")
-    
-    print(f"\n📊 Thông tin dataset:")
-    print(f"   Total samples: {X.shape[0]}")
-    print(f"   Spectrogram shape: {X.shape[1:]}")
-    print(f"   Số lệnh (classes): {len(np.unique(Y))}")
-    
-    # Reshape Y thành (1, n_samples) để phù hợp với NN
-    Y = Y.reshape(1, -1)
-    
-    # Chia train/test
-    X_train, X_test, Y_train, Y_test = train_test_split(
-        X, Y.T, 
-        test_size=test_size, 
-        random_state=random_state,
-        stratify=Y.T  # Giữ tỷ lệ các class
-    )
-    
-    # Reshape Y về dạng (1, n_samples)
-    Y_train = Y_train.T
-    Y_test = Y_test.T
-    
-    print(f"\n✅ Chia dữ liệu:")
-    print(f"   Train set: {X_train.shape[0]} samples ({X_train.shape[0]/(X_train.shape[0]+X_test.shape[0])*100:.1f}%)")
-    print(f"   Test set: {X_test.shape[0]} samples ({X_test.shape[0]/(X_train.shape[0]+X_test.shape[0])*100:.1f}%)")
-    
-    # Hiển thị phân bố class trong train và test
-    print(f"\n📊 Phân bố class trong Train set:")
-    for class_idx in np.unique(Y_train):
-        count = np.sum(Y_train == class_idx)
-        print(f"   Class {class_idx}: {count} samples ({count/Y_train.shape[1]*100:.1f}%)")
-    
-    print(f"\n📊 Phân bố class trong Test set:")
-    for class_idx in np.unique(Y_test):
-        count = np.sum(Y_test == class_idx)
-        print(f"   Class {class_idx}: {count} samples ({count/Y_test.shape[1]*100:.1f}%)")
-    
-    return X_train, Y_train, X_test, Y_test
 

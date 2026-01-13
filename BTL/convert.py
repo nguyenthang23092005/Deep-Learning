@@ -7,9 +7,9 @@ import random
 from pathlib import Path
 
 # Cấu hình
-INPUT_DIR = r"D:\DL\BTL\data"
-OUTPUT_DIR = r"D:\DL\BTL\data_GK"
-VISUALIZATION_DIR = r"D:\DL\BTL\visual"
+INPUT_DIR = "data"
+OUTPUT_DIR = "data_GK"
+VISUALIZATION_DIR = "visual"
 
 # Các lệnh cần lấy
 SELECTED_COMMANDS = [
@@ -162,6 +162,91 @@ def save_spectrogram_visualization(spectrogram, output_path, title):
     plt.savefig(output_path, dpi=150, bbox_inches='tight')
     plt.close()
 
+def process_unknown_folder(max_samples=350):
+    """
+    Tạo folder 'unknown' từ các lệnh không được sử dụng và noise
+    
+    Arguments:
+    max_samples -- số lượng mẫu tối đa (mặc định: 350)
+    
+    Returns:
+    count -- số lượng file đã xử lý
+    """
+    print(f"\n📁 Tạo folder UNKNOWN từ các lệnh không sử dụng...")
+    
+    output_folder = os.path.join(OUTPUT_DIR, 'unknown')
+    viz_folder = os.path.join(VISUALIZATION_DIR, 'unknown')
+    os.makedirs(output_folder, exist_ok=True)
+    os.makedirs(viz_folder, exist_ok=True)
+    
+    # Lấy tất cả các folder trong INPUT_DIR
+    all_folders = [f for f in os.listdir(INPUT_DIR) if os.path.isdir(os.path.join(INPUT_DIR, f))]
+    
+    # Tìm các folder không nằm trong SELECTED_COMMANDS (bao gồm cả noise)
+    unused_commands = [f for f in all_folders if f not in SELECTED_COMMANDS]
+    
+    if not unused_commands:
+        print("⚠️  Không tìm thấy lệnh nào không được sử dụng")
+        return 0
+    
+    print(f"📋 Tìm thấy {len(unused_commands)} lệnh không sử dụng: {', '.join(unused_commands)}")
+    
+    # Thu thập tất cả file audio từ các lệnh không dùng
+    all_audio_files = []
+    for command in unused_commands:
+        command_folder = os.path.join(INPUT_DIR, command)
+        for ext in ['*.wav', '*.mp3', '*.m4a', '*.flac']:
+            audio_files = list(Path(command_folder).glob(ext))
+            all_audio_files.extend([(command, f) for f in audio_files])
+    
+    print(f"📊 Tổng số files có sẵn: {len(all_audio_files)}")
+    
+    # Random chọn max_samples files
+    if len(all_audio_files) > max_samples:
+        print(f"🎲 Random chọn {max_samples} files từ {len(all_audio_files)} files")
+        selected_files = random.sample(all_audio_files, max_samples)
+    else:
+        print(f"⚠️  Chỉ có {len(all_audio_files)} files, lấy tất cả")
+        selected_files = all_audio_files
+    
+    # Chọn 10 indices để visualization
+    num_viz = min(10, len(selected_files))
+    viz_indices = set(random.sample(range(len(selected_files)), num_viz))
+    
+    success_count = 0
+    for idx, (command, audio_file) in enumerate(selected_files):
+        # Load và preprocess audio
+        y, sr = load_and_preprocess_audio(str(audio_file), focus_start=True, max_duration=1.5)
+        
+        if y is None:
+            continue
+        
+        # Chuyển sang log-spectrogram
+        log_spec = audio_to_log_spectrogram(y, sr)
+        
+        # Lưu với tên file có prefix command gốc
+        output_filename = f"{command}_{audio_file.stem}.npy"
+        output_path = os.path.join(output_folder, output_filename)
+        np.save(output_path, log_spec)
+        
+        # Visualization cho 10 samples
+        if idx in viz_indices:
+            viz_filename = f"{command}_{audio_file.stem}.png"
+            viz_path = os.path.join(viz_folder, viz_filename)
+            save_spectrogram_visualization(
+                log_spec,
+                viz_path,
+                f"UNKNOWN - {command} - Sample {idx+1}"
+            )
+        
+        success_count += 1
+        
+        if (idx + 1) % 50 == 0:
+            print(f"  ✓ Đã xử lý {idx + 1}/{len(selected_files)} files")
+    
+    print(f"✅ Hoàn thành UNKNOWN: {success_count}/{len(selected_files)} files")
+    return success_count
+
 def process_command(command):
     """
     Xử lý tất cả file audio của một lệnh
@@ -264,9 +349,18 @@ def main():
         count = process_command(command)
         total_files += count
     
+    # Xử lý folder UNKNOWN
+    print("\n" + "="*60)
+    print("TẠO FOLDER UNKNOWN")
+    print("="*60)
+    unknown_count = process_unknown_folder(max_samples=350)
+    total_files += unknown_count
+    
     print("\n" + "="*60)
     print(f"✅ HOÀN THÀNH!")
     print(f"📊 Tổng số file đã xử lý: {total_files}")
+    print(f"   - Các lệnh chính: {total_files - unknown_count}")
+    print(f"   - Unknown: {unknown_count}")
     print(f"📂 Dữ liệu đã lưu tại: {OUTPUT_DIR}")
     print(f"🖼️  Ảnh visualization tại: {VISUALIZATION_DIR}")
     print("="*60)

@@ -5,8 +5,8 @@ import random
 from pathlib import Path
 
 # Đường dẫn
-DATA_DIR = r"D:\DL\BTL\data_GK"
-OUTPUT_DIR = r"D:\DL\BTL\visual"
+DATA_DIR = "data_GK"
+OUTPUT_DIR = "visual"
 
 # Các lệnh cần so sánh
 COMMANDS = [

@@ -34,25 +34,6 @@ def load_checkpoint(checkpoint_path):
 def train_model(X_train, Y_train, X_test, Y_test, label_mapping,
                 layers_dims, learning_rate=0.01, num_iterations=3000,
                 checkpoint_interval=500, checkpoint_dir='checkpoint'):
-    """
-    Training model với checkpointing
-    
-    Arguments:
-    X_train -- training data, shape (n_samples, height, width)
-    Y_train -- training labels, shape (1, n_samples)
-    X_test -- test data, shape (n_samples, height, width)
-    Y_test -- test labels, shape (1, n_samples)
-    label_mapping -- dict mapping từ class index -> command name
-    layers_dims -- list kích thước các layer [input_size, hidden1, hidden2, ..., output_size]
-    learning_rate -- learning rate
-    num_iterations -- số iterations
-    checkpoint_interval -- lưu checkpoint sau mỗi bao nhiêu iterations
-    checkpoint_dir -- folder lưu checkpoint
-    
-    Returns:
-    parameters -- trained parameters
-    costs -- list of costs during training
-    """
     
     print("\n" + "="*70)
     print("🚀 BẮT ĐẦU TRAINING")
@@ -68,7 +49,20 @@ def train_model(X_train, Y_train, X_test, Y_test, label_mapping,
     print(f"   X_train: {X_train.shape} → {X_train_resized.shape}")
     print(f"   X_test: {X_test.shape} → {X_test_resized.shape}")
     
-    # Flatten X từ (n_samples, height, width) -> (height*width, n_samples)
+    # Normalize về khoảng [0, 1]
+    print(f"\n🔧 Normalize dữ liệu về [0, 1]...")
+    print(f"   Trước normalize - X_train: min={X_train_resized.min():.2f}, max={X_train_resized.max():.2f}")
+    
+    # Min-Max Normalization
+    X_train_min = X_train_resized.min()
+    X_train_max = X_train_resized.max()
+    
+    X_train_resized = (X_train_resized - X_train_min) / (X_train_max - X_train_min + 1e-8)
+    X_test_resized = (X_test_resized - X_train_min) / (X_train_max - X_train_min + 1e-8)
+    
+    print(f"   Sau normalize - X_train: min={X_train_resized.min():.2f}, max={X_train_resized.max():.2f}")
+    print(f"   Sau normalize - X_test: min={X_test_resized.min():.2f}, max={X_test_resized.max():.2f}")
+    
     X_train_flatten = X_train_resized.reshape(X_train_resized.shape[0], -1).T
     X_test_flatten = X_test_resized.reshape(X_test_resized.shape[0], -1).T
     
@@ -117,7 +111,13 @@ def train_model(X_train, Y_train, X_test, Y_test, label_mapping,
         # Log cost mỗi 100 iterations
         if i % 100 == 0:
             costs.append(cost)
-            print(f"Iteration {i:5d} | Cost: {cost:.6f}")
+            
+            # Debug: Check predictions diversity
+            preds = np.argmax(Z, axis=0)
+            unique_preds, counts = np.unique(preds, return_counts=True)
+            pred_dist = ", ".join([f"C{c}:{n}" for c, n in zip(unique_preds, counts)])
+            
+            print(f"Iteration {i:5d} | Cost: {cost:.6f} | Predictions: {pred_dist}")
         
         # Lưu checkpoint
         if (i > 0 and i % checkpoint_interval == 0) or i == num_iterations - 1:
@@ -275,7 +275,7 @@ if __name__ == "__main__":
     USE_FULL_DATA = True  # True: dùng toàn bộ data, False: dùng sample data
     
     # Hyperparameters
-    LEARNING_RATE = 0.1
+    LEARNING_RATES = [0.1, 0.01, 0.001, 0.0001]
     NUM_ITERATIONS = 5000
     CHECKPOINT_INTERVAL = 500
     CHECKPOINT_DIR = 'checkpoint_nn'
@@ -307,35 +307,84 @@ if __name__ == "__main__":
     input_size = 32 * 32
     output_size = len(label_mapping)
     
-    # layers_dims = [input_size, 256, 128, 64, output_size]
-    # layers_dims =[input_size, 512, 256, 128, 64, output_size]
-    layers_dims = [input_size,512, 256, 128, 64, 32,output_size]
-
-
-    
-    print(f"\n🏗️  Kiến trúc mô hình:")
-    print(f"   Input: {input_size} (32x32 spectrogram)")
-    print(f"   Hidden layers: 256 -> 128 -> 64")
-    print(f"   Output: {output_size} classes")
+    # Danh sách các kiến trúc cần thử
+    all_layers_dims = [
+        [input_size, 256, 128, 64, output_size],
+        [input_size, 512, 256, 128, 64, output_size],
+        [input_size, 512, 256, 128, 64, 32, output_size]
+    ]
     
     # =====================================================================
-    # TRAINING
+    # TRAINING - THỬ NHIỀU CẤU HÌNH
     # =====================================================================
     
-    parameters, costs = train_model(
-        X_train, Y_train, X_test, Y_test, label_mapping,
-        layers_dims=layers_dims,
-        learning_rate=LEARNING_RATE,
-        num_iterations=NUM_ITERATIONS,
-        checkpoint_interval=CHECKPOINT_INTERVAL,
-        checkpoint_dir=CHECKPOINT_DIR
-    )
+    print("\n" + "="*70)
+    print("🎯 BẮT ĐẦU TRAINING VỚI NHIỀU CẤU HÌNH")
+    print("="*70)
+    print(f"Số kiến trúc: {len(all_layers_dims)}")
+    print(f"Số learning rates: {len(LEARNING_RATES)}")
+    print(f"Tổng số lần training: {len(all_layers_dims) * len(LEARNING_RATES)}")
+    print("="*70)
     
-    print("\n💾 Các file đã được lưu trong folder:", CHECKPOINT_DIR)
-    print("   - checkpoint_iter_500.npz")
-    print("   - checkpoint_iter_1000.npz")
-    print("   - checkpoint_iter_1500.npz")
-    print("   - ...")
-    print("   - final_model.npz")
-    print("   - learning_curve.png")
-    print("   - training_info.txt")
+    results = []
+    
+    for arch_idx, layers_dims in enumerate(all_layers_dims, 1):
+        print(f"\n{'='*70}")
+        print(f"🏗️  KIẾN TRÚC {arch_idx}/{len(all_layers_dims)}")
+        print(f"{'='*70}")
+        print(f"   Architecture: {layers_dims}")
+        print(f"   Input: {input_size} (32x32 spectrogram)")
+        print(f"   Hidden layers: {' -> '.join(map(str, layers_dims[1:-1]))}")
+        print(f"   Output: {output_size} classes")
+        
+        for lr_idx, learning_rate in enumerate(LEARNING_RATES, 1):
+            print(f"\n{'-'*70}")
+            print(f"📊 Training {arch_idx}.{lr_idx}: Architecture {arch_idx} | LR = {learning_rate}")
+            print(f"{'-'*70}")
+            
+            # Training
+            parameters, costs = train_model(
+                X_train, Y_train, X_test, Y_test, label_mapping,
+                layers_dims=layers_dims,
+                learning_rate=learning_rate,
+                num_iterations=NUM_ITERATIONS,
+                checkpoint_interval=CHECKPOINT_INTERVAL,
+                checkpoint_dir=CHECKPOINT_DIR
+            )
+            
+            # Lưu kết quả
+            results.append({
+                'architecture': layers_dims,
+                'learning_rate': learning_rate,
+                'final_cost': costs[-1],
+                'min_cost': min(costs)
+            })
+    
+    # =====================================================================
+    # TÓM TẮT KẾT QUẢ
+    # =====================================================================
+    
+    print("\n" + "="*70)
+    print("📊 TÓM TẮT KẾT QUẢ TẤT CẢ CẤU HÌNH")
+    print("="*70)
+    
+    for idx, result in enumerate(results, 1):
+        arch_str = ' -> '.join(map(str, result['architecture']))
+        print(f"\n{idx}. Architecture: {arch_str}")
+        print(f"   Learning Rate: {result['learning_rate']}")
+        print(f"   Final Cost: {result['final_cost']:.6f}")
+        print(f"   Min Cost: {result['min_cost']:.6f}")
+    
+    # Tìm cấu hình tốt nhất
+    best_idx = np.argmin([r['min_cost'] for r in results])
+    best_result = results[best_idx]
+    
+    print(f"\n{'='*70}")
+    print(f"🏆 CẤU HÌNH TỐT NHẤT (Config {best_idx + 1}):")
+    print(f"{'='*70}")
+    print(f"   Architecture: {' -> '.join(map(str, best_result['architecture']))}")
+    print(f"   Learning Rate: {best_result['learning_rate']}")
+    print(f"   Min Cost: {best_result['min_cost']:.6f}")
+    print(f"{'='*70}")
+    
+    print("\n💾 Tất cả các file đã được lưu trong folder:", CHECKPOINT_DIR)

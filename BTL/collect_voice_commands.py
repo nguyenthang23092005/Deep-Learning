@@ -162,15 +162,11 @@ class VoiceCommandCollector:
         
         # Nhóm lệnh theo chức năng
         groups = {
-            "ĐÈN": ['1', '2', 'a', 's'],
+            "ĐÈN": ['1', '2'],
             "QUẠT": ['3', '4'],
             "ĐIỀU HÒA": ['5', '6', 'e', 'r'],
-            "CỬA": ['7', '8', 'x', 'c'],
-            "CỬA SỔ & RÈM": ['d', 'f', 'g', 'h'],
-            "AN NINH": ['9', '0', 'u', 'v', 'b'],
-            "CAMERA": ['t', 'y'],
-            "GIẢI TRÍ": ['j', 'k', 'l', 'z'],
-            "CHẾ ĐỘ": ['i', 'o', 'p'],
+            "CỬA": ['7', '8'],
+            "AN NINH": ['9', '0'],
             "TỔNG QUÁT": ['q', 'w'],
             "NHIỄU": ['n'],
         }
