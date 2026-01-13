@@ -18,13 +18,15 @@ def relu_backward(dA, cache):
 
 
 def initialize_parameters_deep(layer_dims):
-    np.random.seed(3)
+    # Removed fixed seed for better randomization
     parameters = {}
     L = len(layer_dims)           
 
     for l in range(1, L):
+        # He initialization for ReLU layers
         parameters['W' + str(l)] = np.random.randn(layer_dims[l], layer_dims[l-1]) * np.sqrt(2 / layer_dims[l-1])
-        parameters['b' + str(l)] = np.zeros((layer_dims[l], 1))     
+        parameters['b' + str(l)] = np.zeros((layer_dims[l], 1))
+    
     return parameters
 
 def linear_forward(A, W, b):

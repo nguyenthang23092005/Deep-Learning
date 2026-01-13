@@ -184,41 +184,13 @@ def evaluate_all_models():
         test_count = np.sum(Y_test.flatten() == idx)
         print(f"      Class {idx} ({name}): Train={train_count}, Test={test_count}")
     
-    # Preprocess TEST SET - MUST use same normalization as training!
-    print("\n📐 Preprocessing TEST set...")
+    # Preprocess TEST SET - NO normalization
+    print("\n📐 Preprocessing TEST set (resize only, NO normalization)...")
     X_test_resized = np.array([cv2.resize(img, RESIZE_SHAPE, interpolation=cv2.INTER_AREA) 
                                for img in X_test])
-    print(f"   Before normalization: min={X_test_resized.min():.2f}, max={X_test_resized.max():.2f}")
+    print(f"   After resize: shape={X_test_resized.shape}, min={X_test_resized.min():.2f}, max={X_test_resized.max():.2f}")
     
-    # Preprocess TRAIN SET to get normalization parameters (same as training)
-    print("\n📐 Preprocessing TRAIN set to get normalization parameters...")
-    X_train_resized = np.array([cv2.resize(img, RESIZE_SHAPE, interpolation=cv2.INTER_AREA) 
-                                for img in X_train])
-    
-    # Get train set's min/max
-    X_train_min = X_train_resized.min()
-    X_train_max = X_train_resized.max()
-    print(f"   Train set: min={X_train_min:.2f}, max={X_train_max:.2f}")
-    
-    # Normalize TEST set using TRAIN set's statistics (CRITICAL: same as training!)
-    X_test_resized = (X_test_resized - X_train_min) / (X_train_max - X_train_min + 1e-8)
-    print(f"   After normalization: min={X_test_resized.min():.2f}, max={X_test_resized.max():.2f}")
-    
-    # Preprocess TRAIN SET to get normalization parameters (same as training)
-    print("\n📐 Preprocessing TRAIN set to get normalization parameters...")
-    X_train_resized = np.array([cv2.resize(img, RESIZE_SHAPE, interpolation=cv2.INTER_AREA) 
-                                for img in X_train])
-    
-    # Get train set's min/max
-    X_train_min = X_train_resized.min()
-    X_train_max = X_train_resized.max()
-    print(f"   Train set: min={X_train_min:.2f}, max={X_train_max:.2f}")
-    
-    # Normalize TEST set using TRAIN set's statistics (CRITICAL: same as training!)
-    X_test_resized = (X_test_resized - X_train_min) / (X_train_max - X_train_min + 1e-8)
-    print(f"   After normalization: min={X_test_resized.min():.2f}, max={X_test_resized.max():.2f}")
-    
-    # Flatten
+    # Flatten (NO normalization)
     X_test_eval = X_test_resized.reshape(X_test_resized.shape[0], -1).T
     Y_test_eval = Y_test.flatten()
     

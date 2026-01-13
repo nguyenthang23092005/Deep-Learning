@@ -79,7 +79,7 @@ def train_model(X_train, Y_train, X_test, Y_test, label_mapping,
     print(f"   Iterations: {num_iterations}")
     print(f"   Checkpoint interval: {checkpoint_interval}")
     
-    np.random.seed(1)
+    # No fixed seed for better randomization
     parameters = initialize_parameters_deep(layers_dims)
     costs = []
     
