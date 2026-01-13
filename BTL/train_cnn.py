@@ -322,14 +322,14 @@ if __name__ == "__main__":
     if USE_FULL_DATA:
         print("📂 Loading TOÀN BỘ dữ liệu từ data_GK...")
         X_train, Y_train, X_test, Y_test, label_mapping = load_data_from_folders(
-            data_dir='D:/DL/BTL/data_GK',
+            data_dir='data_GK',
             test_size=0.2,
             random_state=42
         )
     else:
         print("📂 Loading SAMPLE dữ liệu (20 mẫu/lệnh)...")
         X_train, Y_train, X_test, Y_test, label_mapping = load_sample_data(
-            data_dir='D:/DL/BTL/data_GK',
+            data_dir='data_GK',
             samples_per_class=20,
             test_size=0.2,
             random_state=42

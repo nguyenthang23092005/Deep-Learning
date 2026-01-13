@@ -275,7 +275,7 @@ if __name__ == "__main__":
     USE_FULL_DATA = True  # True: dùng toàn bộ data, False: dùng sample data
     
     # Hyperparameters
-    LEARNING_RATE = 0.01
+    LEARNING_RATE = 0.1
     NUM_ITERATIONS = 5000
     CHECKPOINT_INTERVAL = 500
     CHECKPOINT_DIR = 'checkpoint_nn'
@@ -287,14 +287,14 @@ if __name__ == "__main__":
     if USE_FULL_DATA:
         print("📂 Loading TOÀN BỘ dữ liệu từ data_GK...")
         X_train, Y_train, X_test, Y_test, label_mapping = load_data_from_folders(
-            data_dir='D:/DL/BTL/data_GK',
+            data_dir='data_GK',
             test_size=0.2,
             random_state=42
         )
     else:
         print("📂 Loading SAMPLE dữ liệu (20 mẫu/lệnh)...")
         X_train, Y_train, X_test, Y_test, label_mapping = load_sample_data(
-            data_dir='D:/DL/BTL/data_GK',
+            data_dir='data_GK',
             samples_per_class=20,
             test_size=0.2,
             random_state=42
@@ -304,12 +304,14 @@ if __name__ == "__main__":
     # ĐỊNH NGHĨA KIẾN TRÚC
     # =====================================================================
     
-    # Input size = 32 * 32 = 1024 (sau khi resize)
     input_size = 32 * 32
     output_size = len(label_mapping)
     
-    # Architecture: Input -> 256 -> 128 -> 64 -> Output
-    layers_dims = [input_size, 256, 128, 64, output_size]
+    # layers_dims = [input_size, 256, 128, 64, output_size]
+    # layers_dims =[input_size, 512, 256, 128, 64, output_size]
+    layers_dims = [input_size,512, 256, 128, 64, 32,output_size]
+
+
     
     print(f"\n🏗️  Kiến trúc mô hình:")
     print(f"   Input: {input_size} (32x32 spectrogram)")
