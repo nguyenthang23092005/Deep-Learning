@@ -292,7 +292,7 @@ def evaluate_all_models():
     return results
 
 def visualize_all_results(results, label_mapping):
-    """Visualize tất cả kết quả trên cùng 1 figure"""
+    """Visualize tất cả kết quả thành 4 hình riêng biệt"""
     print("\n" + "="*80)
     print("CREATING COMPREHENSIVE VISUALIZATION")
     print("="*80)
@@ -300,13 +300,12 @@ def visualize_all_results(results, label_mapping):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
     n_models = len(results)
+    run_names = [f"Run {i+1}\n{r['learning_rate']}" if r['learning_rate'] != 'N/A' else f"Run {i+1}" for i, r in enumerate(results)]
+    colors = plt.cm.viridis(np.linspace(0, 1, n_models))
     
-    # ========== FIGURE 1: Training Curves ==========
-    fig1 = plt.figure(figsize=(20, 12))
-    gs1 = fig1.add_gridspec(2, 2, hspace=0.3, wspace=0.3)
+    # ========== HÌNH 1: Training Loss Curves ==========
+    fig1, ax1 = plt.subplots(figsize=(12, 8))
     
-    # Plot 1: Training Loss
-    ax1 = fig1.add_subplot(gs1[0, 0])
     for i, result in enumerate(results):
         if result['metrics'] is not None:
             costs = result['metrics']['costs']
@@ -316,42 +315,52 @@ def visualize_all_results(results, label_mapping):
             ax1.plot(iterations, costs, marker='o', markersize=3, 
                     label=label, linewidth=1.5)
     
-    ax1.set_xlabel('Iterations', fontsize=11)
-    ax1.set_ylabel('Cost (Loss)', fontsize=11)
-    ax1.set_title('Training Loss Curves - All Models', fontsize=13, fontweight='bold')
-    ax1.legend(fontsize=8)
+    ax1.set_xlabel('Iterations', fontsize=12, fontweight='bold')
+    ax1.set_ylabel('Cost (Loss)', fontsize=12, fontweight='bold')
+    ax1.set_title('Training Loss Curves - All Models', fontsize=14, fontweight='bold', pad=15)
+    ax1.legend(fontsize=9, loc='best')
     ax1.grid(True, alpha=0.3)
     
-    # Plot 2: Final Loss Comparison (Bar Chart)
-    ax2 = fig1.add_subplot(gs1[0, 1])
-    run_names = [f"Run {i+1}\n{r['learning_rate']}" if r['learning_rate'] != 'N/A' else f"Run {i+1}" for i, r in enumerate(results)]
-    final_losses = [r['loss'] for r in results]
-    colors = plt.cm.viridis(np.linspace(0, 1, n_models))
+    output_path1 = os.path.join(OUTPUT_DIR, '1_training_loss_curves.png')
+    plt.tight_layout()
+    plt.savefig(output_path1, dpi=200, bbox_inches='tight', facecolor='white')
+    print(f"✅ Saved (1/4): {output_path1}")
+    plt.close()
     
+    # ========== HÌNH 2: Final Loss Comparison ==========
+    fig2, ax2 = plt.subplots(figsize=(10, 8))
+    
+    final_losses = [r['loss'] for r in results]
     bars = ax2.bar(range(n_models), final_losses, color=colors, alpha=0.7, edgecolor='black')
-    ax2.set_xlabel('Model', fontsize=11)
-    ax2.set_ylabel('Final Loss', fontsize=11)
-    ax2.set_title('Final Loss Comparison', fontsize=13, fontweight='bold')
+    ax2.set_xlabel('Model', fontsize=12, fontweight='bold')
+    ax2.set_ylabel('Final Loss', fontsize=12, fontweight='bold')
+    ax2.set_title('Final Loss Comparison', fontsize=14, fontweight='bold', pad=15)
     ax2.set_xticks(range(n_models))
-    ax2.set_xticklabels(run_names, fontsize=8, rotation=45, ha='right')
+    ax2.set_xticklabels(run_names, fontsize=9, rotation=45, ha='right')
     ax2.grid(True, alpha=0.3, axis='y')
     
     # Add value labels on bars
     for i, (bar, loss) in enumerate(zip(bars, final_losses)):
         height = bar.get_height()
         ax2.text(bar.get_x() + bar.get_width()/2., height,
-                f'{loss:.4f}', ha='center', va='bottom', fontsize=8)
+                f'{loss:.4f}', ha='center', va='bottom', fontsize=9, fontweight='bold')
     
-    # Plot 3: Accuracy Comparison (Bar Chart)
-    ax3 = fig1.add_subplot(gs1[1, 0])
+    output_path2 = os.path.join(OUTPUT_DIR, '2_final_loss_comparison.png')
+    plt.tight_layout()
+    plt.savefig(output_path2, dpi=200, bbox_inches='tight', facecolor='white')
+    print(f"✅ Saved (2/4): {output_path2}")
+    plt.close()
+    
+    # ========== HÌNH 3: Test Accuracy Comparison ==========
+    fig3, ax3 = plt.subplots(figsize=(10, 8))
+    
     accuracies = [r['accuracy'] for r in results]
-    
     bars = ax3.bar(range(n_models), accuracies, color=colors, alpha=0.7, edgecolor='black')
-    ax3.set_xlabel('Model', fontsize=11)
-    ax3.set_ylabel('Accuracy (%)', fontsize=11)
-    ax3.set_title('Test Accuracy Comparison', fontsize=13, fontweight='bold')
+    ax3.set_xlabel('Model', fontsize=12, fontweight='bold')
+    ax3.set_ylabel('Accuracy (%)', fontsize=12, fontweight='bold')
+    ax3.set_title('Test Accuracy Comparison', fontsize=14, fontweight='bold', pad=15)
     ax3.set_xticks(range(n_models))
-    ax3.set_xticklabels(run_names, fontsize=8, rotation=45, ha='right')
+    ax3.set_xticklabels(run_names, fontsize=9, rotation=45, ha='right')
     ax3.set_ylim([0, 100])
     ax3.grid(True, alpha=0.3, axis='y')
     ax3.axhline(y=100, color='green', linestyle='--', linewidth=1, alpha=0.5)
@@ -360,10 +369,16 @@ def visualize_all_results(results, label_mapping):
     for i, (bar, acc) in enumerate(zip(bars, accuracies)):
         height = bar.get_height()
         ax3.text(bar.get_x() + bar.get_width()/2., height,
-                f'{acc:.1f}%', ha='center', va='bottom', fontsize=8)
+                f'{acc:.1f}%', ha='center', va='bottom', fontsize=9, fontweight='bold')
     
-    # Plot 4: Summary Table
-    ax4 = fig1.add_subplot(gs1[1, 1])
+    output_path3 = os.path.join(OUTPUT_DIR, '3_test_accuracy_comparison.png')
+    plt.tight_layout()
+    plt.savefig(output_path3, dpi=200, bbox_inches='tight', facecolor='white')
+    print(f"✅ Saved (3/4): {output_path3}")
+    plt.close()
+    
+    # ========== HÌNH 4: Summary Table ==========
+    fig4, ax4 = plt.subplots(figsize=(12, 8))
     ax4.axis('off')
     
     # Check if any model has valid LR
@@ -377,7 +392,7 @@ def visualize_all_results(results, label_mapping):
         table_data.append(['Model', 'Accuracy', 'Loss', 'Architecture'])
     
     for i, result in enumerate(results):
-        arch_short = str(result['architecture'])[:20] + '...' if len(str(result['architecture'])) > 20 else str(result['architecture'])
+        arch_short = str(result['architecture'])[:25] + '...' if len(str(result['architecture'])) > 25 else str(result['architecture'])
         if has_valid_lr:
             table_data.append([
                 f"Run {i+1}",
@@ -397,8 +412,8 @@ def visualize_all_results(results, label_mapping):
     table = ax4.table(cellText=table_data, cellLoc='center', loc='center',
                      bbox=[0, 0, 1, 1])
     table.auto_set_font_size(False)
-    table.set_fontsize(9)
-    table.scale(1, 2)
+    table.set_fontsize(10)
+    table.scale(1, 2.5)
     
     # Style header row
     num_cols = 5 if has_valid_lr else 4
@@ -412,95 +427,21 @@ def visualize_all_results(results, label_mapping):
             if i % 2 == 0:
                 table[(i, j)].set_facecolor('#E7E6E6')
     
-    fig1.suptitle('MODEL TRAINING COMPARISON - LOSS & ACCURACY', 
-                  fontsize=16, fontweight='bold', y=0.98)
+    ax4.set_title('Model Training Summary Table', fontsize=14, fontweight='bold', pad=20)
     
-    output_path1 = os.path.join(OUTPUT_DIR, 'model_comparison_training.png')
-    plt.savefig(output_path1, dpi=200, bbox_inches='tight', facecolor='white')
-    print(f"✅ Saved training comparison: {output_path1}")
+    output_path4 = os.path.join(OUTPUT_DIR, '4_summary_table.png')
+    plt.savefig(output_path4, dpi=200, bbox_inches='tight', facecolor='white')
+    print(f"✅ Saved (4/4): {output_path4}")
+    plt.close()
     
-    # ========== FIGURE 2: Per-Class Performance ==========
-    fig2 = plt.figure(figsize=(20, 10))
+    print("\n" + "="*80)
+    print("✅ ALL VISUALIZATIONS CREATED SUCCESSFULLY!")
+    print("="*80)
     
-    n_classes = len(label_mapping)
-    class_names = [label_mapping[i] for i in range(n_classes)]
-    
-    # Prepare per-class accuracy data
-    per_class_data = np.zeros((n_models, n_classes))
-    for i, result in enumerate(results):
-        for class_idx, acc in result['per_class_accuracy'].items():
-            per_class_data[i, class_idx] = acc
-    
-    # Grouped bar chart
-    x = np.arange(n_classes)
-    width = 0.8 / n_models
-    
-    for i in range(n_models):
-        offset = (i - n_models/2) * width + width/2
-        label = f"Run {i+1} ({results[i]['learning_rate']})" if results[i]['learning_rate'] != 'N/A' else f"Run {i+1}"
-        plt.bar(x + offset, per_class_data[i], width, 
-               label=label,
-               alpha=0.7, edgecolor='black')
-    
-    plt.xlabel('Class', fontsize=12, fontweight='bold')
-    plt.ylabel('Accuracy (%)', fontsize=12, fontweight='bold')
-    plt.title('Per-Class Accuracy Comparison Across All Models', 
-             fontsize=15, fontweight='bold', pad=20)
-    plt.xticks(x, class_names, rotation=45, ha='right', fontsize=10)
-    plt.ylim([0, 105])
-    plt.legend(fontsize=9, loc='upper right')
-    plt.grid(True, alpha=0.3, axis='y')
-    plt.axhline(y=100, color='green', linestyle='--', linewidth=1, alpha=0.5)
-    
-    plt.tight_layout()
-    
-    output_path2 = os.path.join(OUTPUT_DIR, 'model_comparison_per_class.png')
-    plt.savefig(output_path2, dpi=200, bbox_inches='tight', facecolor='white')
-    print(f"✅ Saved per-class comparison: {output_path2}")
-    
-    # ========== FIGURE 3: Best Model Confusion Matrix ==========
+    # Print summary
     best_idx = np.argmax([r['accuracy'] for r in results])
     best_result = results[best_idx]
     
-    fig3, ax = plt.subplots(figsize=(12, 10))
-    
-    cm = best_result['confusion_matrix']
-    im = ax.imshow(cm, cmap='Blues', aspect='auto')
-    
-    # Add colorbar
-    cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label('Count', fontsize=11)
-    
-    # Set ticks
-    ax.set_xticks(np.arange(n_classes))
-    ax.set_yticks(np.arange(n_classes))
-    ax.set_xticklabels(class_names, rotation=45, ha='right', fontsize=10)
-    ax.set_yticklabels(class_names, fontsize=10)
-    
-    # Add text annotations
-    for i in range(n_classes):
-        for j in range(n_classes):
-            text = ax.text(j, i, cm[i, j],
-                          ha="center", va="center",
-                          color="white" if cm[i, j] > cm.max()/2 else "black",
-                          fontsize=10, fontweight='bold')
-    
-    ax.set_xlabel('Predicted Label', fontsize=12, fontweight='bold')
-    ax.set_ylabel('True Label', fontsize=12, fontweight='bold')
-    lr_text = f' | LR: {best_result["learning_rate"]}' if best_result['learning_rate'] != 'N/A' else ''
-    ax.set_title(f'Confusion Matrix - Best Model: {best_result["run_name"]}\n'
-                f'Accuracy: {best_result["accuracy"]:.2f}%{lr_text}',
-                fontsize=14, fontweight='bold', pad=15)
-    
-    plt.tight_layout()
-    
-    output_path3 = os.path.join(OUTPUT_DIR, 'best_model_confusion_matrix.png')
-    plt.savefig(output_path3, dpi=200, bbox_inches='tight', facecolor='white')
-    print(f"✅ Saved confusion matrix: {output_path3}")
-    
-    plt.show()
-    
-    # Print summary
     print("\n" + "="*80)
     print("EVALUATION SUMMARY")
     print("="*80)
